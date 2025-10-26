@@ -1,0 +1,5 @@
+yahooquery
+pandas
+matplotlib
+numpy 
+scipy
