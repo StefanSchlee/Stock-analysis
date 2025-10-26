@@ -53,5 +53,5 @@ class PlotManager:
                     except IndexError:
                         pass
             fig.tight_layout(rect=[0, 0, 1, 0.95])
-
+        plt.tight_layout()
         plt.show()

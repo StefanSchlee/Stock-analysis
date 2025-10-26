@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline, pchip_interpolate
 from PlotManager import PlotManager
+from scipy.stats import linregress
 
 
 ###########################
@@ -95,8 +96,63 @@ ax = plot_manager.next_axis("EPS corrected")
 ax.bar(eps_series.index, eps_series.array , width=pd.Timedelta(days=30))
 
 #get chart history
-chartHistory = ticker.history(period='20y',interval='1d',adj_timezone=False)['close'][symbol]
+# --- 1️⃣ Fetch 20-year price history ---
+chartHistory = ticker.history(period='20y', interval='1d', adj_timezone=False)['close'][symbol]
 chartHistory.index = pd.DatetimeIndex(chartHistory.index).tz_localize(None)
+chartHistory = chartHistory.dropna()
+
+# --- 2️⃣ Split into three equal time phases ---
+n = len(chartHistory)
+split_points = [n // 3, 2 * n // 3]
+phases = [
+    chartHistory.iloc[:split_points[0]],
+    chartHistory.iloc[split_points[0]:split_points[1]],
+    chartHistory.iloc[split_points[1]:],
+]
+
+# --- 3️⃣ Define CAGR function ---
+def mean_annual_growth(series: pd.Series):
+    start_price = series.iloc[0]
+    end_price = series.iloc[-1]
+    years = (series.index[-1] - series.index[0]).days / 365.25
+    if start_price <= 0 or years == 0:
+        return np.nan
+    return (end_price / start_price) ** (1 / years) - 1
+
+# --- 4️⃣ Prepare figure ---
+fig, ax = plt.subplots(figsize=(10, 6))
+ax.plot(chartHistory, label=f"{symbol} Closing Price (20y)", color="black", linewidth=1)
+ax.set_yscale('log')
+ax.set_title(f"{symbol} – 20-Year Logarithmic Price Chart with Growth Phases")
+ax.set_xlabel("Date")
+ax.set_ylabel("Price (log scale)")
+ax.grid(True, which="both", ls='--', alpha=0.6)
+
+# --- 5️⃣ Shade, annotate, and add regression lines for each phase ---
+colors = ['#f4cccc', '#d9ead3', '#cfe2f3']
+for i, phase in enumerate(phases):
+    # Shade the phase
+    ax.axvspan(phase.index[0], phase.index[-1], color=colors[i], alpha=0.25)
+    
+    # Compute CAGR
+    growth = mean_annual_growth(phase)
+    
+    # Regression on log(price)
+    x = np.arange(len(phase)) / 252  # roughly years (252 trading days)
+    y = np.log(phase.values)
+    slope, intercept, r, p, se = linregress(x, y)
+    
+    # Predicted line (convert back from log scale)
+    y_fit = np.exp(intercept + slope * x)
+    ax.plot(phase.index, y_fit, color='red', linestyle='--', linewidth=1.2,
+            label=f"Phase {i+1} trend" if i == 0 else None)
+    
+    # Annotate CAGR
+    mid_date = phase.index[len(phase)//2]
+    ax.text(mid_date, chartHistory.max(), f"{growth*100:.2f}%/yr",
+            ha='center', va='top', fontsize=9, fontweight='bold',
+            bbox=dict(facecolor='white', alpha=0.7, edgecolor='none'))
+
 
 #make one big logarithmic chart plot
 fig, ax = plt.subplots(figsize=(10, 6))
