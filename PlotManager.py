@@ -15,6 +15,7 @@ class PlotManager:
         self.axes = None
         self.plot_count = 0
         self.window_count = 0
+        self.all_figs = []  # store all figures for finalize()
 
     def next_axis(self, title=None) -> Axes:
         """Get the next subplot axis in the current window."""
@@ -27,18 +28,30 @@ class PlotManager:
             )) if hasattr(self.axes, 'reshape') else self.axes.flatten()
             self.fig.suptitle(f"Stock Analysis – Window {self.window_count}")
             self.plot_count = 0
+            self.all_figs.append(self.fig)
+
         ax = self.axes[self.plot_count]
         self.plot_count += 1
         if title:
             ax.set_title(title)
-        ax.grid()
-        ax.legend()
+        ax.grid(True)
         return ax
 
     def finalize(self):
-        """Hide any unused axes and show all figures."""
-        if self.fig and self.plot_count < self.plots_per_window:
-            for i in range(self.plot_count, self.plots_per_window):
-                self.fig.delaxes(self.axes[i])
-        plt.tight_layout()
+        """Hide unused axes, add legends, and show all figures."""
+        for fig in self.all_figs:
+            axes = fig.get_axes()
+            for ax in axes:
+                handles, labels = ax.get_legend_handles_labels()
+                if handles:  # only add legend if there are labeled items
+                    ax.legend()
+            # Hide unused subplots in last window
+            if fig is self.all_figs[-1] and self.plot_count < self.plots_per_window:
+                for i in range(self.plot_count, self.plots_per_window):
+                    try:
+                        fig.delaxes(axes[i])
+                    except IndexError:
+                        pass
+            fig.tight_layout(rect=[0, 0, 1, 0.95])
+
         plt.show()

@@ -95,11 +95,19 @@ ax = plot_manager.next_axis("EPS corrected")
 ax.bar(eps_series.index, eps_series.array , width=pd.Timedelta(days=30))
 
 #get chart history
-chartHistory = ticker.history(period='5y',interval='1d',adj_timezone=False)['close'][symbol]
+chartHistory = ticker.history(period='20y',interval='1d',adj_timezone=False)['close'][symbol]
 chartHistory.index = pd.DatetimeIndex(chartHistory.index).tz_localize(None)
 
-ax = plot_manager.next_axis("Chart 5y")
+#make one big logarithmic chart plot
+fig, ax = plt.subplots(figsize=(10, 6))
 ax.plot(chartHistory)
+ax.set_yscale('log')  # <-- Logarithmic scale
+ax.set_title(f"{symbol} – 20 Year Logarithmic Price Chart")
+ax.set_xlabel("Date")
+ax.set_ylabel("Price (log scale)")
+ax.legend()
+ax.grid(True, which="both", ls='--', alpha=0.6)
+
 
 # current KGV
 KGV = chartHistory.array[-1] / eps_series.truncate(after=chartHistory.index[-1]).array[-1]
