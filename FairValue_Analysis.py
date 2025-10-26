@@ -7,6 +7,7 @@ matplotlib.use('TkAgg')  # or 'Qt5Agg'
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.interpolate import CubicSpline, pchip_interpolate
+from PlotManager import PlotManager
 
 
 ###########################
@@ -26,6 +27,9 @@ symbol = 'AAPL'
 ###########################
 
 print(f"Starting Analysis for {symbol} ...")
+
+# Plotmanager instance
+plot_manager = PlotManager(2,2)
 
 ticker = Ticker(symbol)
 
@@ -55,14 +59,12 @@ dates = lastIncome['asOfDate']
 years = dates.dt.year
 lasteps = lastIncome['BasicEPS']
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("Gewinn pro Aktie (raw Data)")
 ax.bar(dates.array.date, lasteps, width=pd.Timedelta(days=30), label="Historic EPS")
 ax.bar(pd.Timestamp(currentYearEarningEstimateDict['endDate']), currentYearEarningEstimateDict['earningsEstimate']['avg'], width=pd.Timedelta(days=30), label="Estimate +0y")
 ax.bar(pd.Timestamp(nextYearEarningsEstimateDict['endDate']), nextYearEarningsEstimateDict['earningsEstimate']['avg'], width=pd.Timedelta(days=30), label='Estimate +1y')
 ax.bar(dates.array.date[-1], currentYearEarningEstimateDict['earningsEstimate']['yearAgoEps'], width=pd.Timedelta(days=10), label="Estimate -1y")
-ax.legend()
-ax.set_title("Gewinn pro Aktie (Raw Data)")
-ax.grid()
+
 
 #extract cashflow of last years, create Cashflow series
 LastCashFlow = ticker.cash_flow()
@@ -70,11 +72,8 @@ CashFlowDates = LastCashFlow['asOfDate']
 OperativeCashFlow = LastCashFlow['CashFlowFromContinuingOperatingActivities']
 CashFlowSeries = pd.Series(OperativeCashFlow.array, CashFlowDates)
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("Cashflow")
 ax.bar(CashFlowSeries.index, OperativeCashFlow.array, width=pd.Timedelta(days=30), label="Historic Operative Cashflow")
-ax.legend()
-ax.set_title("Cash Flow")
-ax.grid()
 
 
 #eps estimate correction (divergence between eps calculation of estimate and history, see GAAP, non-GAAP)
@@ -92,19 +91,15 @@ eps_dates_array= np.append(eps_dates_array,np.datetime64(nextYearEarningsEstimat
 
 eps_series = pd.Series(eps_array,pd.DatetimeIndex(eps_dates_array))
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("EPS corrected")
 ax.bar(eps_series.index, eps_series.array , width=pd.Timedelta(days=30))
-ax.grid()
-ax.set_title("EPS corrected")
 
 #get chart history
 chartHistory = ticker.history(period='5y',interval='1d',adj_timezone=False)['close'][symbol]
 chartHistory.index = pd.DatetimeIndex(chartHistory.index).tz_localize(None)
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("Chart 5y")
 ax.plot(chartHistory)
-ax.grid()
-ax.set_title("Chart 5y")
 
 # current KGV
 KGV = chartHistory.array[-1] / eps_series.truncate(after=chartHistory.index[-1]).array[-1]
@@ -122,11 +117,9 @@ for earningsDate in eps_series.index[::-1]:
 #for calculation of fair value, lower bound KGV to zero in case the EPS were negative
 liveKGVBounded = liveKGV.clip(lower=0)
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("KGVe")
 ax.plot(liveKGV)
 ax.plot(liveKGVBounded, '--', label="bounded")
-ax.grid()
-ax.set_title("KGVe")
 for date in eps_series.index:
     ax.axvline(date,ls='--',c='k')
 
@@ -137,9 +130,8 @@ for date in CashFlowSeries.index[::-1]:
     earlierDates = liveKCV.truncate(after=earningsDate.date()).index
     liveKCV[earlierDates] = chartHistory[earlierDates] / CashFlowSeries[date]
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("KCVe")
 ax.plot(liveKCV)
-ax.set_title("KCVe")
 for date in CashFlowSeries.index:
     ax.axvline(date,ls='--',c='k')
 
@@ -165,9 +157,8 @@ fairValueFine = pchip_interpolate(fairValue.index.values.astype('float'),fairVal
 
 
 
-fig, ax = plt.subplots()
+ax = plot_manager.next_axis("Fair value (KGV)")
 ax.plot(chartHistory, label="Kurs")
-ax.grid()
 
 # ax.plot(fairValue)
 ax.plot(fairValue.index, fairValue.array, ls='', marker='x', label="Fair value",c='k')
@@ -176,7 +167,6 @@ ax.plot(pd.to_datetime(fairValueDateFine), fairValueFine, label=None, c='k')
 ax.plot(pd.to_datetime(fairValueDateFine), 1.2*fairValueFine, label="+20%", c='r')
 ax.plot(pd.to_datetime(fairValueDateFine), 0.8*fairValueFine, label="-20%", c='g')
 
-ax.legend()
 
-plt.show() 
+plot_manager.finalize()
 pass
