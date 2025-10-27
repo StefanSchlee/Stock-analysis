@@ -14,7 +14,7 @@ class StockData:
         self.earnings_trend = None
         self.income_statement = None
         self.cash_flow = None
-        self.cash_flow
+        self.cash_flow_per_share = None
         self.history_5y = None
         self.history_20y = None
         self._fetch_all_data()
@@ -39,9 +39,13 @@ class StockData:
         )
 
         # Cashflow
-        last_cf = self.ticker.cash_flow()
+        last_cf = self.ticker.cash_flow(trailing=False)
         self.cash_flow = pd.Series(
             last_cf["OperatingCashFlow"].array, pd.DatetimeIndex(last_cf["asOfDate"])
+        )
+
+        self.cash_flow_per_share = pd.Series(
+            self.cash_flow.array / self.number_of_shares.array, self.cash_flow.index
         )
 
         # Chart history 20y (omit latest value, as this is datetime not date)

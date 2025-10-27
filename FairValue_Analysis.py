@@ -36,15 +36,7 @@ stock = StockData(symbol)
 
 # EPS estimates
 currentYearEarningEstimateDict, nextYearEarningsEstimateDict = stock.get_eps_estimates()
-print(
-    f"Last year eps estimate: {currentYearEarningEstimateDict['earningsEstimate']['yearAgoEps']}"
-)
-print(
-    f"Current year eps estimate: {currentYearEarningEstimateDict['earningsEstimate']['avg']}"
-)
-print(
-    f"Next year eps estimate: {nextYearEarningsEstimateDict['earningsEstimate']['avg']}"
-)
+
 
 # --- EPS History ---
 dates = stock.income_statement["date"]
@@ -80,13 +72,18 @@ ax.bar(
 )
 
 # --- Cashflow ---
-CashFlowSeries = stock.cash_flow
 ax = plot_manager.next_axis("Cashflow")
 ax.bar(
-    CashFlowSeries.index,
-    CashFlowSeries.array,
+    stock.cash_flow.index,
+    stock.cash_flow.array,
     width=pd.Timedelta(days=30),
-    label="Historic Operative Cashflow",
+)
+
+ax = plot_manager.next_axis("Cashflow per share")
+ax.bar(
+    stock.cash_flow_per_share.index,
+    stock.cash_flow_per_share.array,
+    width=pd.Timedelta(days=30),
 )
 
 # --- Corrected EPS ---
@@ -179,8 +176,6 @@ KGV = (
 KGVe = (
     chartHistory.array[-1] / eps_series.truncate(before=chartHistory.index[-1]).array[0]
 )
-print(f"KGV: {KGV}")
-print(f"KGVe: {KGVe}")
 
 oldestValidKGVDate = eps_series.index[0] - pd.Timedelta(days=365)
 liveKGV = pd.Series(np.nan, chartHistory.truncate(before=oldestValidKGVDate).index)
@@ -189,22 +184,22 @@ for earningsDate in eps_series.index[::-1]:
     liveKGV[earlierDates] = chartHistory[earlierDates] / eps_series[earningsDate]
 liveKGVBounded = liveKGV.clip(lower=0)
 
-ax = plot_manager.next_axis("KGVe")
-ax.plot(liveKGV)
+ax = plot_manager.next_axis(f"KGV: {KGV:.1f}, KGVe: {KGVe:.1f}")
+ax.plot(liveKGV, label="live KGVe")
 ax.plot(liveKGVBounded, "--", label="bounded")
 for date in eps_series.index:
     ax.axvline(date, ls="--", c="k")
 
 # --- KCVe ---
-oldestValidKCVDate = CashFlowSeries.index[0] - pd.Timedelta(days=365)
+oldestValidKCVDate = stock.cash_flow_per_share.index[0] - pd.Timedelta(days=365)
 liveKCV = pd.Series(np.nan, chartHistory.truncate(before=oldestValidKCVDate).index)
-for date in CashFlowSeries.index[::-1]:
+for date in stock.cash_flow_per_share.index[::-1]:
     earlierDates = liveKCV.truncate(after=date.date()).index
-    liveKCV[earlierDates] = chartHistory[earlierDates] / CashFlowSeries[date]
+    liveKCV[earlierDates] = chartHistory[earlierDates] / stock.cash_flow_per_share[date]
 
-ax = plot_manager.next_axis("KCVe")
+ax = plot_manager.next_axis(f"KCVe: {liveKCV.values[-1]:.1f}")
 ax.plot(liveKCV)
-for date in CashFlowSeries.index:
+for date in stock.cash_flow_per_share.index:
     ax.axvline(date, ls="--", c="k")
 
 # --- Fair Value ---
