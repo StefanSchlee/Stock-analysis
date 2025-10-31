@@ -1,0 +1,8 @@
+- get large series of income and return with finqual
+  - plot logarithmic income increase
+  - larger timeframe for fairvalue
+- rainbow EMA
+  - https://chartsekte.de/trading-indikatoren/rainbow-ema/
+- saving output
+- pytest calling a range of tickers for testing
+  - must create analysis class, function

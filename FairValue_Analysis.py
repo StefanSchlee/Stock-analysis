@@ -17,13 +17,13 @@ from StockData import StockData
 # symbol = 'MC.PA'
 # symbol = 'PAYC'
 # symbol = 'PYPL'
-symbol = "AAPL"
+# symbol = "AAPL"
 # symbol = 'ADBE'
 # symbol = 'NFLX'
 # symbol = '7CD.BE'
-# symbol = 'MNST'
-# symbol = 'MSFT'
-# symbol = 'AMZN'
+# symbol = "MNST"
+symbol = "MSFT"
+# symbol = "AMZN"
 # symbol = 'SBUX'
 # symbol = 'PUP'
 # symbol = 'AMD'
@@ -69,6 +69,13 @@ ax.bar(
     stock.number_of_shares.index,
     stock.number_of_shares.array,
     width=pd.Timedelta(days=30),
+    label="yahoo",
+)
+ax.bar(
+    stock.fq_balance_df.index,
+    stock.fq_balance_df["Shares Outstanding"].array,
+    width=pd.Timedelta(days=30),
+    label="finqual",
 )
 
 # --- Cashflow ---
@@ -76,13 +83,6 @@ ax = plot_manager.next_axis("Cashflow")
 ax.bar(
     stock.cash_flow.index,
     stock.cash_flow.array,
-    width=pd.Timedelta(days=30),
-)
-
-ax = plot_manager.next_axis("Cashflow per share")
-ax.bar(
-    stock.cash_flow_per_share.index,
-    stock.cash_flow_per_share.array,
     width=pd.Timedelta(days=30),
 )
 
@@ -113,7 +113,10 @@ eps_dates_array = np.append(
 eps_series = pd.Series(eps_array, pd.DatetimeIndex(eps_dates_array))
 
 ax = plot_manager.next_axis("EPS corrected")
-ax.bar(eps_series.index, eps_series.array, width=pd.Timedelta(days=30))
+ax.bar(eps_series.index, eps_series.array, width=pd.Timedelta(days=30), label="yahoo")
+ax.bar(
+    stock.fq_eps.index, stock.fq_eps.array, width=pd.Timedelta(days=30), label="finqual"
+)
 
 # --- 20-Year Chart with Phases ---
 chartHistory = stock.history_20y.dropna()
@@ -191,16 +194,16 @@ for date in eps_series.index:
     ax.axvline(date, ls="--", c="k")
 
 # --- KCVe ---
-oldestValidKCVDate = stock.cash_flow_per_share.index[0] - pd.Timedelta(days=365)
-liveKCV = pd.Series(np.nan, chartHistory.truncate(before=oldestValidKCVDate).index)
-for date in stock.cash_flow_per_share.index[::-1]:
-    earlierDates = liveKCV.truncate(after=date.date()).index
-    liveKCV[earlierDates] = chartHistory[earlierDates] / stock.cash_flow_per_share[date]
+# oldestValidKCVDate = stock.cash_flow_per_share.index[0] - pd.Timedelta(days=365)
+# liveKCV = pd.Series(np.nan, chartHistory.truncate(before=oldestValidKCVDate).index)
+# for date in stock.cash_flow_per_share.index[::-1]:
+#     earlierDates = liveKCV.truncate(after=date.date()).index
+#     liveKCV[earlierDates] = chartHistory[earlierDates] / stock.cash_flow_per_share[date]
 
-ax = plot_manager.next_axis(f"KCVe: {liveKCV.values[-1]:.1f}")
-ax.plot(liveKCV)
-for date in stock.cash_flow_per_share.index:
-    ax.axvline(date, ls="--", c="k")
+# ax = plot_manager.next_axis(f"KCVe: {liveKCV.values[-1]:.1f}")
+# ax.plot(liveKCV)
+# for date in stock.cash_flow_per_share.index:
+#     ax.axvline(date, ls="--", c="k")
 
 # --- Fair Value ---
 movingAverageTime = pd.Timedelta(days=365 * 3)
