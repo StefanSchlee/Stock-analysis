@@ -34,43 +34,9 @@ print(f"Starting Analysis for {symbol} ...")
 plot_manager = PlotManager(2, 2)
 stock = StockData(symbol)
 
-# EPS estimates
-currentYearEarningEstimateDict, nextYearEarningsEstimateDict = stock.get_eps_estimates()
-
-
-# --- EPS History ---
-dates = stock.income_statement["date"]
-lasteps = stock.income_statement["BasicEPS"]
-
-ax = plot_manager.next_axis("Gewinn pro Aktie (raw Data)")
-ax.bar(dates.array.date, lasteps, width=pd.Timedelta(days=30), label="Historic EPS")
-ax.bar(
-    pd.Timestamp(currentYearEarningEstimateDict["endDate"]),
-    currentYearEarningEstimateDict["earningsEstimate"]["avg"],
-    width=pd.Timedelta(days=30),
-    label="Estimate +0y",
-)
-ax.bar(
-    pd.Timestamp(nextYearEarningsEstimateDict["endDate"]),
-    nextYearEarningsEstimateDict["earningsEstimate"]["avg"],
-    width=pd.Timedelta(days=30),
-    label="Estimate +1y",
-)
-ax.bar(
-    dates.array.date[-1],
-    currentYearEarningEstimateDict["earningsEstimate"]["yearAgoEps"],
-    width=pd.Timedelta(days=10),
-    label="Estimate -1y",
-)
 
 # --- shares ---
 ax = plot_manager.next_axis("Number of shares")
-ax.bar(
-    stock.number_of_shares.index,
-    stock.number_of_shares.array,
-    width=pd.Timedelta(days=30),
-    label="yahoo",
-)
 ax.bar(
     stock.fq_balance_df.index,
     stock.fq_balance_df["Shares Outstanding"].array,
@@ -81,41 +47,42 @@ ax.bar(
 # --- Cashflow ---
 ax = plot_manager.next_axis("Cashflow")
 ax.bar(
-    stock.cash_flow.index,
-    stock.cash_flow.array,
+    stock.fq_cashflow_df.index,
+    stock.fq_cashflow_df["Operating Cash Flow"].array,
     width=pd.Timedelta(days=30),
 )
 
-# --- Corrected EPS ---
-EPScorrectionFactor = (
-    lasteps.iloc[-1] / currentYearEarningEstimateDict["earningsEstimate"]["yearAgoEps"]
-)
-print(f"EPS Correction factor: {EPScorrectionFactor}")
-
-eps_array = lasteps.to_numpy()
-eps_array = np.append(
-    eps_array,
-    currentYearEarningEstimateDict["earningsEstimate"]["avg"] * EPScorrectionFactor,
-)
-eps_array = np.append(
-    eps_array,
-    nextYearEarningsEstimateDict["earningsEstimate"]["avg"] * EPScorrectionFactor,
-)
-
-eps_dates_array = dates.to_numpy()
-eps_dates_array = np.append(
-    eps_dates_array, np.datetime64(currentYearEarningEstimateDict["endDate"])
-)
-eps_dates_array = np.append(
-    eps_dates_array, np.datetime64(nextYearEarningsEstimateDict["endDate"])
-)
-
-eps_series = pd.Series(eps_array, pd.DatetimeIndex(eps_dates_array))
-
-ax = plot_manager.next_axis("EPS corrected")
-ax.bar(eps_series.index, eps_series.array, width=pd.Timedelta(days=30), label="yahoo")
+# --- Corrected EPS
+ax = plot_manager.next_axis("EPS Correction")
 ax.bar(
-    stock.fq_eps.index, stock.fq_eps.array, width=pd.Timedelta(days=30), label="finqual"
+    stock.fq_eps.index,
+    stock.fq_eps.array,
+    width=pd.Timedelta(days=30),
+    label="finqual+corrected estimates",
+)
+ax.bar(
+    stock.income_statement["asOfDate"],
+    stock.income_statement["BasicEPS"],
+    width=pd.Timedelta(days=20),
+    label="yahoo eps",
+)
+ax.bar(
+    pd.Timestamp(stock.yh_current_year_estimates["endDate"]),
+    stock.yh_current_year_estimates["earningsEstimate"]["avg"],
+    width=pd.Timedelta(days=20),
+    label="Estimate +0y",
+)
+ax.bar(
+    pd.Timestamp(stock.yh_next_year_estimates["endDate"]),
+    stock.yh_next_year_estimates["earningsEstimate"]["avg"],
+    width=pd.Timedelta(days=20),
+    label="Estimate +1y",
+)
+ax.bar(
+    stock.income_statement["asOfDate"].iloc[-1],
+    stock.yh_current_year_estimates["earningsEstimate"]["yearAgoEps"],
+    width=pd.Timedelta(days=10),
+    label="Estimate -1y",
 )
 
 # --- 20-Year Chart with Phases ---
@@ -174,23 +141,25 @@ for i, phase in enumerate(phases):
 
 # --- KGV ---
 KGV = (
-    chartHistory.array[-1] / eps_series.truncate(after=chartHistory.index[-1]).array[-1]
+    chartHistory.array[-1]
+    / stock.fq_eps.truncate(before=chartHistory.index[-1]).array[0]
 )
 KGVe = (
-    chartHistory.array[-1] / eps_series.truncate(before=chartHistory.index[-1]).array[0]
+    chartHistory.array[-1]
+    / stock.fq_eps.truncate(after=chartHistory.index[-1]).array[-1]
 )
 
-oldestValidKGVDate = eps_series.index[0] - pd.Timedelta(days=365)
+oldestValidKGVDate = stock.fq_eps.index[-1] - pd.Timedelta(days=365)
 liveKGV = pd.Series(np.nan, chartHistory.truncate(before=oldestValidKGVDate).index)
-for earningsDate in eps_series.index[::-1]:
+for earningsDate in stock.fq_eps.index:
     earlierDates = liveKGV.truncate(after=earningsDate.date()).index
-    liveKGV[earlierDates] = chartHistory[earlierDates] / eps_series[earningsDate]
+    liveKGV[earlierDates] = chartHistory[earlierDates] / stock.fq_eps[earningsDate]
 liveKGVBounded = liveKGV.clip(lower=0)
 
 ax = plot_manager.next_axis(f"KGV: {KGV:.1f}, KGVe: {KGVe:.1f}")
 ax.plot(liveKGV, label="live KGVe")
 ax.plot(liveKGVBounded, "--", label="bounded")
-for date in eps_series.index:
+for date in stock.fq_eps.index:
     ax.axvline(date, ls="--", c="k")
 
 # --- KCVe ---
@@ -208,13 +177,14 @@ for date in eps_series.index:
 # --- Fair Value ---
 movingAverageTime = pd.Timedelta(days=365 * 3)
 fairValue_value = []
-for earningsDate in eps_series.index:
+for earningsDate in stock.fq_eps.index:
     averagingStartDate = earningsDate - movingAverageTime
     meanKGV = liveKGVBounded.truncate(
         before=averagingStartDate, after=earningsDate
     ).array.mean()
-    fairValue_value.append(meanKGV * eps_series[earningsDate])
-fairValue = pd.Series(fairValue_value, eps_series.index)
+    fairValue_value.append(meanKGV * stock.fq_eps[earningsDate])
+fairValue = pd.Series(fairValue_value, stock.fq_eps.index)
+fairValue = fairValue.iloc[::-1].copy()  # make it ascending order
 
 fairValueDateFine = np.linspace(
     fairValue.index.values[0].astype("float"),
