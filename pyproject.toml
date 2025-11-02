@@ -16,6 +16,6 @@ version = "1.0"
 description = "Stock analysis tool creating analysis plots"
 
 [tool.pytest.ini_options]
-addopts = "--cov=stock_analysis"
+addopts = "--cov=stock_analysis --cov-report html"
 
 testpaths = ["tests"]
