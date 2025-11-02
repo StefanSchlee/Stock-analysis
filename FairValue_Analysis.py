@@ -40,7 +40,7 @@ ax = plot_manager.next_axis("Number of shares")
 ax.bar(
     stock.fq_balance_df.index,
     stock.fq_balance_df["Shares Outstanding"].array,
-    width=pd.Timedelta(days=30),
+    width=pd.Timedelta(weeks=12),
     label="finqual",
 )
 
@@ -49,7 +49,7 @@ ax = plot_manager.next_axis("Cashflow")
 ax.bar(
     stock.fq_cashflow_df.index,
     stock.fq_cashflow_df["Operating Cash Flow"].array,
-    width=pd.Timedelta(days=30),
+    width=pd.Timedelta(weeks=12),
 )
 
 # --- Corrected EPS
@@ -57,31 +57,31 @@ ax = plot_manager.next_axis("EPS Correction")
 ax.bar(
     stock.fq_eps.index,
     stock.fq_eps.array,
-    width=pd.Timedelta(days=30),
+    width=pd.Timedelta(weeks=12),
     label="finqual+corrected estimates",
 )
 ax.bar(
     stock.income_statement["asOfDate"],
     stock.income_statement["BasicEPS"],
-    width=pd.Timedelta(days=20),
+    width=pd.Timedelta(weeks=8),
     label="yahoo eps",
 )
 ax.bar(
     pd.Timestamp(stock.yh_current_year_estimates["endDate"]),
     stock.yh_current_year_estimates["earningsEstimate"]["avg"],
-    width=pd.Timedelta(days=20),
+    width=pd.Timedelta(weeks=8),
     label="Estimate +0y",
 )
 ax.bar(
     pd.Timestamp(stock.yh_next_year_estimates["endDate"]),
     stock.yh_next_year_estimates["earningsEstimate"]["avg"],
-    width=pd.Timedelta(days=20),
+    width=pd.Timedelta(weeks=8),
     label="Estimate +1y",
 )
 ax.bar(
     stock.income_statement["asOfDate"].iloc[-1],
     stock.yh_current_year_estimates["earningsEstimate"]["yearAgoEps"],
-    width=pd.Timedelta(days=10),
+    width=pd.Timedelta(weeks=4),
     label="Estimate -1y",
 )
 
@@ -202,6 +202,23 @@ ax.plot(pd.to_datetime(fairValueDateFine), fairValueFine, c="k")
 ax.plot(pd.to_datetime(fairValueDateFine), 1.2 * fairValueFine, label="+20%", c="r")
 ax.plot(pd.to_datetime(fairValueDateFine), 0.8 * fairValueFine, label="-20%", c="g")
 ax.set_xlim(fairValue.index[0], fairValue.index[-1])
+ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
+ax.grid(True, which="both", ls="--", lw=0.5)
+
+## --- logarithmic revenue, earnings
+ax = plot_manager.next_axis("Logarithmic Financials")
+ax.bar(
+    stock.fq_income_df.index,
+    stock.fq_income_df["Total Revenue"].array,
+    width=pd.Timedelta(weeks=12),
+    label="revenue",
+)
+ax.bar(
+    stock.fq_income_df.index,
+    stock.fq_income_df["Net Income"].array,
+    width=pd.Timedelta(weeks=12),
+    label="earnings",
+)
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
