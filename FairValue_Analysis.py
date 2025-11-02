@@ -277,4 +277,5 @@ add_piecewise_annual_growth_regression(stock.fq_income_df["Net Income"][::-1], a
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
+plot_manager.save_pdf(f"generated_pdf/{stock.symbol}.pdf")
 plot_manager.finalize()

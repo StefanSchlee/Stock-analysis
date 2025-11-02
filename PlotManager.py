@@ -4,6 +4,8 @@
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.backends.backend_pdf import PdfPages
+from pathlib import Path
 
 
 class PlotManager:
@@ -15,7 +17,7 @@ class PlotManager:
         self.axes = None
         self.plot_count = 0
         self.window_count = 0
-        self.all_figs = []  # store all figures for finalize()
+        self.all_figs = []  # store all figures for finalize() or save_pdf()
 
     def next_axis(self, title=None) -> Axes:
         """Get the next subplot axis in the current window."""
@@ -23,9 +25,11 @@ class PlotManager:
             # open new window
             self.window_count += 1
             self.fig, self.axes = plt.subplots(self.rows, self.cols, figsize=(10, 8))
-            self.axes = list(itertools.chain.from_iterable(
-                self.axes.reshape(-1, self.cols)
-            )) if hasattr(self.axes, 'reshape') else self.axes.flatten()
+            self.axes = (
+                list(itertools.chain.from_iterable(self.axes.reshape(-1, self.cols)))
+                if hasattr(self.axes, "reshape")
+                else self.axes.flatten()
+            )
             self.fig.suptitle(f"Stock Analysis – Window {self.window_count}")
             self.plot_count = 0
             self.all_figs.append(self.fig)
@@ -55,3 +59,28 @@ class PlotManager:
             fig.tight_layout(rect=[0, 0, 1, 0.95])
         plt.tight_layout()
         plt.show()
+
+    def save_pdf(self, filename: str | Path, metadata: dict | None = None):
+        """Save all stored figures to a single multi-page PDF."""
+        if not self.all_figs:
+            print("No figures to save.")
+            return
+
+        # ensure folder exists
+        path = Path(filename)
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Ensure file ends with .pdf
+        path = path.with_suffix(".pdf")
+
+        with PdfPages(path) as pdf:
+            for fig in self.all_figs:
+                pdf.savefig(fig)
+
+            # Optional metadata
+            if metadata:
+                info = pdf.infodict()
+                for key, value in metadata.items():
+                    info[key] = value
+
+        print(f"Saved {len(self.all_figs)} figure(s) to '{path}'")

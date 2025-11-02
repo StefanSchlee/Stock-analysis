@@ -1,4 +1,3 @@
-- plot logarithmic income increase
 - fairvalue with 
   - cashflow
   - revenue
