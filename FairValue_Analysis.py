@@ -29,6 +29,30 @@ symbol = "MSFT"
 # symbol = 'AMD'
 ###########################
 
+
+def mean_annual_growth(series: pd.Series) -> tuple[np.ndarray, float]:
+    """Computes an anual growth regression
+
+    Args:
+        series (pd.Series): Series with DatetimeIndex
+
+    Returns:
+        tuple[np.ndarray, float]: (regression line values, anual growth in percent)
+    """
+    x = np.arange(len(series))
+    y = np.log(series.values)
+    slope, intercept, r, p, se = linregress(x, y)
+    y_fit = np.exp(intercept + slope * x)
+    anual_growth = (
+        slope
+        * 100
+        * len(series)
+        * pd.Timedelta(days=365)
+        / (series.index[-1] - series.index[0])
+    )
+    return (y_fit, anual_growth)
+
+
 print(f"Starting Analysis for {symbol} ...")
 
 plot_manager = PlotManager(2, 2)
@@ -51,6 +75,34 @@ ax.bar(
     stock.fq_cashflow_df["Operating Cash Flow"].array,
     width=pd.Timedelta(weeks=12),
 )
+# add mean average growth for phases
+series = stock.fq_cashflow_df["Operating Cash Flow"][::-1]
+series = series[series > 0]
+iphases = list(range(len(series), 0, -5))
+iphases.sort()
+if iphases[0] != 0:
+    iphases.insert(0, 0)
+for i, istart_index in enumerate(iphases[0:-1]):
+    # get subseries
+    subseries = series.iloc[istart_index : iphases[i + 1]]
+    # compute mean average growth
+    y_fit, growth = mean_annual_growth(subseries)
+    ax.plot(subseries.index, y_fit, color="red", linestyle="--", linewidth=1.2)
+    mid_date = subseries.index[len(subseries) // 2]
+    ax.text(
+        mid_date,
+        series.max(),
+        f"{growth:.2f}%/yr",
+        ha="center",
+        va="top",
+        fontsize=9,
+        fontweight="bold",
+        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
+    )
+
+ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
+ax.grid(True, which="both", ls="--", lw=0.5)
+
 
 # --- Corrected EPS
 ax = plot_manager.next_axis("EPS Correction")
@@ -96,15 +148,6 @@ phases = [
 ]
 
 
-def mean_annual_growth(series: pd.Series):
-    start_price = series.iloc[0]
-    end_price = series.iloc[-1]
-    years = (series.index[-1] - series.index[0]).days / 365.25
-    if start_price <= 0 or years == 0:
-        return np.nan
-    return (end_price / start_price) ** (1 / years) - 1
-
-
 fig, ax = plt.subplots(figsize=(10, 6))
 ax.plot(chartHistory, color="black", linewidth=1, label=f"{symbol} Closing Price (20y)")
 ax.set_yscale("log")
@@ -117,21 +160,15 @@ colors = ["#f4cccc", "#d9ead3", "#cfe2f3"]
 for i, phase in enumerate(phases):
     ax.axvspan(phase.index[0], phase.index[-1], color=colors[i], alpha=0.25)
 
-    # CAGR
-    growth = mean_annual_growth(phase)
-
     # Regression line
-    x = np.arange(len(phase)) / 252
-    y = np.log(phase.values)
-    slope, intercept, r, p, se = linregress(x, y)
-    y_fit = np.exp(intercept + slope * x)
+    y_fit, anual_growth = mean_annual_growth(phase)
     ax.plot(phase.index, y_fit, color="red", linestyle="--", linewidth=1.2)
 
     mid_date = phase.index[len(phase) // 2]
     ax.text(
         mid_date,
         chartHistory.max(),
-        f"{growth*100:.2f}%/yr",
+        f"{anual_growth:.2f}%/yr",
         ha="center",
         va="top",
         fontsize=9,
