@@ -1,6 +1,9 @@
 ###########################
 # helper for grouped plotting
 ###########################
+import matplotlib
+
+matplotlib.use("TkAgg")  # or 'Qt5Agg'
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
