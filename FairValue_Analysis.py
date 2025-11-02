@@ -93,63 +93,6 @@ print(f"Starting Analysis for {symbol} ...")
 plot_manager = PlotManager(2, 2)
 stock = StockData(symbol)
 
-
-# --- shares ---
-ax = plot_manager.next_axis("Number of shares")
-ax.bar(
-    stock.fq_balance_df.index,
-    stock.fq_balance_df["Shares Outstanding"].array,
-    width=pd.Timedelta(weeks=12),
-    label="finqual",
-)
-
-# --- Cashflow ---
-ax = plot_manager.next_axis("Cashflow")
-ax.bar(
-    stock.fq_cashflow_df.index,
-    stock.fq_cashflow_df["Operating Cash Flow"].array,
-    width=pd.Timedelta(weeks=12),
-)
-# add mean average growth for phases
-series = stock.fq_cashflow_df["Operating Cash Flow"][::-1]
-add_piecewise_annual_growth_regression(series, ax, 5)
-ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
-ax.grid(True, which="both", ls="--", lw=0.5)
-
-
-# --- Corrected EPS
-ax = plot_manager.next_axis("EPS Correction")
-ax.bar(
-    stock.fq_eps.index,
-    stock.fq_eps.array,
-    width=pd.Timedelta(weeks=12),
-    label="finqual+corrected estimates",
-)
-ax.bar(
-    stock.income_statement["asOfDate"],
-    stock.income_statement["BasicEPS"],
-    width=pd.Timedelta(weeks=8),
-    label="yahoo eps",
-)
-ax.bar(
-    pd.Timestamp(stock.yh_current_year_estimates["endDate"]),
-    stock.yh_current_year_estimates["earningsEstimate"]["avg"],
-    width=pd.Timedelta(weeks=8),
-    label="Estimate +0y",
-)
-ax.bar(
-    pd.Timestamp(stock.yh_next_year_estimates["endDate"]),
-    stock.yh_next_year_estimates["earningsEstimate"]["avg"],
-    width=pd.Timedelta(weeks=8),
-    label="Estimate +1y",
-)
-ax.bar(
-    stock.income_statement["asOfDate"].iloc[-1],
-    stock.yh_current_year_estimates["earningsEstimate"]["yearAgoEps"],
-    width=pd.Timedelta(weeks=4),
-    label="Estimate -1y",
-)
-
 # --- 20-Year Chart with Phases ---
 chartHistory = stock.history_20y.dropna()
 n = len(chartHistory)
@@ -187,6 +130,7 @@ for i, phase in enumerate(phases):
         fontweight="bold",
         bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
     )
+
 
 # --- KGV ---
 KGV = (
@@ -244,7 +188,7 @@ fairValueFine = pchip_interpolate(
     fairValue.index.values.astype("float"), fairValue.array, fairValueDateFine
 )
 
-ax = plot_manager.next_axis("Fair value (KGV)")
+ax = plot_manager.next_axis("Fair value (KGV)", full=True)
 ax.plot(chartHistory, label="Kurs")
 ax.plot(fairValue.index, fairValue.array, ls="", marker="x", label="Fair value", c="k")
 ax.plot(pd.to_datetime(fairValueDateFine), fairValueFine, c="k")
@@ -276,5 +220,62 @@ add_piecewise_annual_growth_regression(stock.fq_income_df["Net Income"][::-1], a
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
-plot_manager.save_pdf(f"generated_pdf/{stock.symbol}.pdf")
-plot_manager.finalize()
+# --- shares ---
+ax = plot_manager.next_axis("Number of shares")
+ax.bar(
+    stock.fq_balance_df.index,
+    stock.fq_balance_df["Shares Outstanding"].array,
+    width=pd.Timedelta(weeks=12),
+    label="finqual",
+)
+
+# --- Cashflow ---
+ax = plot_manager.next_axis("Cashflow")
+ax.bar(
+    stock.fq_cashflow_df.index,
+    stock.fq_cashflow_df["Operating Cash Flow"].array,
+    width=pd.Timedelta(weeks=12),
+)
+# add mean average growth for phases
+series = stock.fq_cashflow_df["Operating Cash Flow"][::-1]
+add_piecewise_annual_growth_regression(series, ax, 5)
+ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
+ax.grid(True, which="both", ls="--", lw=0.5)
+
+
+# --- Corrected EPS
+ax = plot_manager.next_axis("EPS Correction")
+ax.bar(
+    stock.fq_eps.index,
+    stock.fq_eps.array,
+    width=pd.Timedelta(weeks=12),
+    label="finqual+corrected estimates",
+)
+ax.bar(
+    stock.income_statement["asOfDate"],
+    stock.income_statement["BasicEPS"],
+    width=pd.Timedelta(weeks=8),
+    label="yahoo eps",
+)
+ax.bar(
+    pd.Timestamp(stock.yh_current_year_estimates["endDate"]),
+    stock.yh_current_year_estimates["earningsEstimate"]["avg"],
+    width=pd.Timedelta(weeks=8),
+    label="Estimate +0y",
+)
+ax.bar(
+    pd.Timestamp(stock.yh_next_year_estimates["endDate"]),
+    stock.yh_next_year_estimates["earningsEstimate"]["avg"],
+    width=pd.Timedelta(weeks=8),
+    label="Estimate +1y",
+)
+ax.bar(
+    stock.income_statement["asOfDate"].iloc[-1],
+    stock.yh_current_year_estimates["earningsEstimate"]["yearAgoEps"],
+    width=pd.Timedelta(weeks=4),
+    label="Estimate -1y",
+)
+
+
+plot_manager.finalize(show=False, filename=f"generated_pdf/{stock.symbol}.pdf")
+print(f"Starting Analysis for {symbol} ... done")

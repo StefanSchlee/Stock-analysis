@@ -4,6 +4,7 @@
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure
 from matplotlib.backends.backend_pdf import PdfPages
 from pathlib import Path
 
@@ -17,7 +18,7 @@ class PlotManager:
         self._axes = None
         self._plot_count = 0
         self._window_count = 0
-        self._all_figs = []  # store all figures for finalize() or save_pdf()
+        self._all_figs: list[Figure] = []
 
     def next_axis(self, title: str | None = None, full: bool = False) -> Axes:
         """
@@ -58,8 +59,8 @@ class PlotManager:
         ax.grid(True)
         return ax
 
-    def finalize(self):
-        """Hide unused axes, add legends, and show all figures."""
+    def finalize(self, show=True, filename: str | Path | None = None):
+        """Hide unused axes, add legends, (optionally) show all figures,(optionally) save to pdf."""
         for fig in self._all_figs:
             axes = fig.get_axes()
             for ax in axes:
@@ -77,11 +78,16 @@ class PlotManager:
                         fig.delaxes(axes[i])
                     except IndexError:
                         pass
-            fig.tight_layout(rect=[0, 0, 1, 0.95])
-        plt.tight_layout()
-        plt.show()
+            fig.tight_layout()
 
-    def save_pdf(self, filename: str | Path):
+        # optionally save to pdf
+        if filename is not None:
+            self._save_pdf(filename)
+
+        if show:
+            plt.show()
+
+    def _save_pdf(self, filename: str | Path):
         """Save all stored figures to a single multi-page PDF."""
         if not self._all_figs:
             print("No figures to save.")
