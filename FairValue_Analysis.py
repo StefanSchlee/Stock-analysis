@@ -161,10 +161,9 @@ phases = [
 ]
 
 
-fig, ax = plt.subplots(figsize=(10, 6))
+ax = plot_manager.next_axis("Logarithmic Chart with Growth Phases", full=True)
 ax.plot(chartHistory, color="black", linewidth=1, label=f"{symbol} Closing Price (20y)")
 ax.set_yscale("log")
-ax.set_title(f"{symbol} – 20-Year Logarithmic Price Chart with Growth Phases")
 ax.set_xlabel("Date")
 ax.set_ylabel("Price (log scale)")
 ax.grid(True, which="both", ls="--", alpha=0.6)
