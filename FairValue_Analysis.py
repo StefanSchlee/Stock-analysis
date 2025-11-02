@@ -202,5 +202,7 @@ ax.plot(pd.to_datetime(fairValueDateFine), fairValueFine, c="k")
 ax.plot(pd.to_datetime(fairValueDateFine), 1.2 * fairValueFine, label="+20%", c="r")
 ax.plot(pd.to_datetime(fairValueDateFine), 0.8 * fairValueFine, label="-20%", c="g")
 ax.set_xlim(fairValue.index[0], fairValue.index[-1])
+ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
+ax.grid(True, which="both", ls="--", lw=0.5)
 
 plot_manager.finalize()
