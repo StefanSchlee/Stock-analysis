@@ -2,8 +2,6 @@
 # helper for grouped plotting
 ###########################
 import matplotlib
-
-matplotlib.use("TkAgg")  # or 'Qt5Agg'
 import itertools
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
@@ -88,6 +86,7 @@ class PlotManager:
             self._save_pdf(filename)
 
         if show:
+            matplotlib.use("TkAgg")  # or 'Qt5Agg'
             plt.show()
 
     def _save_pdf(self, filename: str | Path):
