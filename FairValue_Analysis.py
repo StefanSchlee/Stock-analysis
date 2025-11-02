@@ -6,6 +6,7 @@ import matplotlib
 
 matplotlib.use("TkAgg")  # or 'Qt5Agg'
 import matplotlib.pyplot as plt
+from matplotlib.axes import Axes
 import numpy as np
 from scipy.interpolate import CubicSpline, pchip_interpolate
 from PlotManager import PlotManager
@@ -53,6 +54,40 @@ def mean_annual_growth(series: pd.Series) -> tuple[np.ndarray, float]:
     return (y_fit, anual_growth)
 
 
+def add_piecewise_annual_growth_regression(
+    series: pd.Series, ax: Axes, phaselength: int
+) -> None:
+    """Add piecewise annual growth regression lines
+
+    Args:
+        series (pd.Series): series with datetimeindex, one datapoint per year
+        ax (Axes): axes to print on
+        phaselength (int): length of phases in years
+    """
+    series = series[series > 0]
+    iphases = list(range(len(series), 0, -phaselength))
+    iphases.sort()
+    if iphases[0] != 0:
+        iphases.insert(0, 0)
+    for i, istart_index in enumerate(iphases[0:-1]):
+        # get subseries
+        subseries = series.iloc[istart_index : iphases[i + 1]]
+        # compute mean average growth
+        y_fit, growth = mean_annual_growth(subseries)
+        ax.plot(subseries.index, y_fit, color="red", linestyle="--", linewidth=1.2)
+        mid_date = subseries.index[len(subseries) // 2]
+        ax.text(
+            mid_date,
+            series.max(),
+            f"{growth:.2f}%/yr",
+            ha="center",
+            va="top",
+            fontsize=9,
+            fontweight="bold",
+            bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
+        )
+
+
 print(f"Starting Analysis for {symbol} ...")
 
 plot_manager = PlotManager(2, 2)
@@ -77,29 +112,7 @@ ax.bar(
 )
 # add mean average growth for phases
 series = stock.fq_cashflow_df["Operating Cash Flow"][::-1]
-series = series[series > 0]
-iphases = list(range(len(series), 0, -5))
-iphases.sort()
-if iphases[0] != 0:
-    iphases.insert(0, 0)
-for i, istart_index in enumerate(iphases[0:-1]):
-    # get subseries
-    subseries = series.iloc[istart_index : iphases[i + 1]]
-    # compute mean average growth
-    y_fit, growth = mean_annual_growth(subseries)
-    ax.plot(subseries.index, y_fit, color="red", linestyle="--", linewidth=1.2)
-    mid_date = subseries.index[len(subseries) // 2]
-    ax.text(
-        mid_date,
-        series.max(),
-        f"{growth:.2f}%/yr",
-        ha="center",
-        va="top",
-        fontsize=9,
-        fontweight="bold",
-        bbox=dict(facecolor="white", alpha=0.7, edgecolor="none"),
-    )
-
+add_piecewise_annual_growth_regression(series, ax, 5)
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
@@ -242,20 +255,25 @@ ax.set_xlim(fairValue.index[0], fairValue.index[-1])
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
-## --- logarithmic revenue, earnings
-ax = plot_manager.next_axis("Logarithmic Financials")
+## --- logarithmic revenue
+ax = plot_manager.next_axis("Total Revenue")
 ax.bar(
     stock.fq_income_df.index,
     stock.fq_income_df["Total Revenue"].array,
     width=pd.Timedelta(weeks=12),
-    label="revenue",
 )
+add_piecewise_annual_growth_regression(stock.fq_income_df["Total Revenue"][::-1], ax, 5)
+ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
+ax.grid(True, which="both", ls="--", lw=0.5)
+
+## --- logarithmic income
+ax = plot_manager.next_axis("Net Income")
 ax.bar(
     stock.fq_income_df.index,
     stock.fq_income_df["Net Income"].array,
     width=pd.Timedelta(weeks=12),
-    label="earnings",
 )
+add_piecewise_annual_growth_regression(stock.fq_income_df["Net Income"][::-1], ax, 5)
 ax.set_yscale("log")  # ← this line makes the y-axis logarithmic
 ax.grid(True, which="both", ls="--", lw=0.5)
 
