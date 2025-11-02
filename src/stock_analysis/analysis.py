@@ -2,8 +2,8 @@ from scipy.stats import linregress
 from matplotlib.axes import Axes
 import numpy as np
 import pandas as pd
-from PlotManager import PlotManager
-from StockData import StockData
+from .PlotManager import PlotManager
+from .StockData import StockData
 from scipy.interpolate import pchip_interpolate
 
 
