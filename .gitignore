@@ -2,3 +2,4 @@ __pycache__
 finqual_example_outputs
 generated_pdf
 *.egg-info
+*.coverage

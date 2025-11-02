@@ -65,6 +65,13 @@ def _add_piecewise_annual_growth_regression(
 
 
 def make_stock_analysis(symbol: str, show_figures: bool, save_to_pdf: bool) -> None:
+    """Main function for creating the stock analysis report for a given stock symbol
+
+    Args:
+        symbol (str): stock symbol
+        show_figures (bool): open matplotlib figures
+        save_to_pdf (bool): save figures to report pdf
+    """
     print(f"Starting Analysis for {symbol} ...")
 
     plot_manager = PlotManager(2, 2)
