@@ -24,8 +24,7 @@ def _mean_annual_growth(series: pd.Series) -> tuple[np.ndarray, float]:
         slope
         * 100
         * len(series)
-        * pd.Timedelta(days=365)
-        / (series.index[-1] - series.index[0])
+        * (pd.Timedelta(days=365) / (series.index[-1] - series.index[0]))
     )
     return (y_fit, anual_growth)
 
