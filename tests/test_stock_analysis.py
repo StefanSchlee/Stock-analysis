@@ -3,7 +3,25 @@ import pytest
 from stock_analysis import make_stock_analysis
 
 # Example list of stock symbols to test
-STOCK_SYMBOLS = ["AAPL", "MSFT", "GOOG", "TSLA"]
+STOCK_SYMBOLS = [
+    "AAPL",  # Apple
+    "MSFT",  # Microsoft
+    "GOOG",  # Alphabet
+    "TSLA",  # Tesla
+    "AMZN",  # Amazon
+    "NVDA",  # NVIDIA
+    "NFLX",  # Netflix
+    "JPM",  # JPMorgan Chase
+    "V",  # Visa
+    "JNJ",  # Johnson & Johnson
+    "UNH",  # UnitedHealth Group
+    "XOM",  # ExxonMobil
+    "KO",  # Coca-Cola
+    "PEP",  # PepsiCo
+    "DIS",  # Walt Disney
+    "NKE",  # Nike
+    "INTC",  # Intel
+]
 
 
 @pytest.mark.parametrize("symbol", STOCK_SYMBOLS)

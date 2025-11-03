@@ -79,9 +79,13 @@ class StockData:
         # finqual eps
         fq_net_income = self.fq_income_df["Net Income"]
         fq_net_income = fq_net_income[fq_net_income > 0]
+        if len(fq_net_income) == 0:
+            raise ValueError("No net income data availabe!")
 
         fq_shares = self.fq_balance_df["Shares Outstanding"]
         fq_shares = fq_shares[fq_shares > 0]
+        if len(fq_shares) == 0:
+            raise ValueError("No number of shares data available!")
 
         common_idx = fq_net_income.index.intersection(fq_shares.index)
         self.fq_eps = fq_net_income[common_idx] / fq_shares[common_idx]

@@ -45,8 +45,10 @@ def _add_piecewise_annual_growth_regression(
     if iphases[0] != 0:
         iphases.insert(0, 0)
     for i, istart_index in enumerate(iphases[0:-1]):
-        # get subseries
+        # get subseries, makes only sense if subseries is longer than one
         subseries = series.iloc[istart_index : iphases[i + 1]]
+        if len(subseries) < 2:
+            continue
         # compute mean average growth
         y_fit, growth = _mean_annual_growth(subseries)
         ax.plot(subseries.index, y_fit, color="red", linestyle="--", linewidth=1.2)
