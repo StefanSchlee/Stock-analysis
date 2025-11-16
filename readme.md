@@ -1,13 +1,14 @@
 # Python Stock Analysis
 
-(insert tests badge)
+[![Tests](https://github.com/StefanSchlee/Stock-analysis/actions/workflows/python-tests.yml/badge.svg)](https://github.com/StefanSchlee/Stock-analysis/actions/workflows/python-tests.yml)
 
-This project is inspired by tools like (insert aktienfinder website link, eulerpool link), which visualize stock chart and fundamentals data in intuitive charts. The goal is to support investors to quickly assess if a stock may be currently undervalued based on the data. 
 
-My motivation on this project rise because i was often unsatisfied by the tools mentioned above. There was no single tool or website, which offered all features i wanted, or they are hidden behind a paywall. For example, a logarithmic plot of the chart and fundamental data is found almost nowhere.
+This project is inspired by existing investor tools (for example, [Aktienfinder](https://aktienfinder.net) and [Eulerpool](https://eulerpool.com)) that visualize price charts and fundamental data using intuitive plots. The goal is to help investors quickly assess whether a stock appears undervalued based on the available data.
+
+I started this project because I was frequently unsatisfied with available tools — no single website provided all the features I wanted, and some useful features were hidden behind paywalls. For example, logarithmic plots of price and fundamental data are rarely available together.
 
 ## Usage
-All functionality is given by the `make_stock_analysis` function in the `stock_analysis` python package:
+The primary entry point is the `make_stock_analysis` function in the `stock_analysis` python package:
 - select a stock by its ticker
 - decide if interactive matplotlib plots should be opened
 - decide if all plots should be exported to a pdf
