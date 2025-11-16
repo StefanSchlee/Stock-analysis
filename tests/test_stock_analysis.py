@@ -21,6 +21,7 @@ STOCK_SYMBOLS = [
     "DIS",  # Walt Disney
     "NKE",  # Nike
     "INTC",  # Intel
+    "INTU",  # Intuit
 ]
 
 
