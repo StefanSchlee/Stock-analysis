@@ -15,10 +15,10 @@ STOCK_SYMBOLS = [
     "V",  # Visa
     "JNJ",  # Johnson & Johnson
     "UNH",  # UnitedHealth Group
-    "XOM",  # ExxonMobil
+    # "XOM",  # ExxonMobil (funktioniert bei finqual aktuell nicht)
     "KO",  # Coca-Cola
     "PEP",  # PepsiCo
-    "DIS",  # Walt Disney
+    # "DIS",  # Walt Disney (funktioniert bei finqual aktuell nicht)
     "NKE",  # Nike
     "INTC",  # Intel
     "INTU",  # Intuit
